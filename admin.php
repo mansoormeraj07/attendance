@@ -78,6 +78,18 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .bdg{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap}.bdg.g{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}.bdg.r{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}.bdg.o{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}.bdg.m{color:var(--mut);background:color-mix(in srgb,var(--mut) 15%,transparent)}
 .fg{font-size:17px;margin-right:5px}.ghost{margin-top:10px;width:100%}.sm{color:var(--mut);font-size:12px;display:block}
 @media(max-width:560px){.tl{grid-template-columns:1fr 1fr}}
+
+/* v13 admin Aurora dark */
+:root{--bg:#070b16;--card:rgba(255,255,255,.055);--ink:#e8ecf8;--mut:#8f9bb8;--line:rgba(255,255,255,.11);--good:#2fd39a;--warn:#ffb454;--bad:#ff6b7a;color-scheme:dark}
+body{background:#070b16 radial-gradient(900px 500px at 12% -10%,rgba(91,140,255,.22),transparent 60%) fixed;background-image:radial-gradient(900px 500px at 12% -10%,rgba(91,140,255,.22),transparent 60%),radial-gradient(700px 480px at 95% 8%,rgba(138,91,255,.18),transparent 60%);background-attachment:fixed}
+.bar{background:rgba(255,255,255,.05);border-bottom:1px solid var(--line);backdrop-filter:blur(10px);color:#fff}
+.bar a.b{color:#fff}
+.card{backdrop-filter:blur(10px);border-radius:18px;transition:border-color .25s,box-shadow .25s}
+.card:hover{border-color:rgba(91,140,255,.4)}
+main,.bar .in{max-width:980px}
+input,select{background:rgba(255,255,255,.06)}
+button.p{background:linear-gradient(135deg,#5b8cff,#8a5bff);color:#fff;box-shadow:0 0 18px rgba(91,140,255,.35)}
+button:hover:not(:disabled){border-color:rgba(91,140,255,.6)}
 </style></head><body>
 <div class="bar"><div class="in"><div class="tile"><?php if ($B['logo']): ?><img src="<?= h($B['logo']) ?>" alt=""><?php else: ?><b><?= h(strtoupper(substr($B['name'], 0, 1))) ?></b><?php endif; ?></div>
 <h1><?= h($B['name']) ?><small>Admin panel</small></h1><a class="b" href="index.php">Open dashboard</a><a class="b" href="logout.php">Log out</a></div></div>

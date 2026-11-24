@@ -87,11 +87,12 @@ function brand() {
 function brand_css($b) { return ':root{--acc:' . $b['accent'] . ';--onacc:' . $b['on'] . '}'; }
 
 /* One-time welcome / what's new popup. Admin ticks 'Show welcome message' per user (admin panel); it shows once, then un-ticks itself. */
-const WELCOME_V = 6;
+const WELCOME_V=7;
 function welcome_items() { return [
   ['Employee side panel', 'Click any employee to open a panel with their attendance ring, a colourful month calendar and a day-by-day timeline.'],
   ['Alerts and live shift countdown', 'The bell in the side menu warns about long absences, late arrivals and missing punches. A card shows when the next shift starts.'],
   ['Filters on demand', 'Press the Filters button to open the filter panel. It tucks itself away again after 5 seconds.'],
   ['Safer sign-in', 'For your security you are signed out after 5 minutes of inactivity, with a warning before it happens. Sign-ins are logged.'],
+  ['Quick search', 'Press Ctrl+K (or the search button in the side menu) to jump to any employee or section. Top on-time staff and department rates now sit under the summary cards.'],
   ['Undo for shifts', 'Changed a shift by mistake? Press Undo in the message that appears.'],
 ]; }

@@ -554,3 +554,46 @@ function fsum(){const c=[];if(F.shift!='all')c.push(NM[F.shift]);if(F.dept!='all
  ['input','change','click','keydown','focusin'].forEach(ev=>pn.addEventListener(ev,()=>{if(!pn.classList.contains('fh'))arm()}));
  pn.addEventListener('keydown',e=>{if(e.key==='Escape'){show(false);bt.focus()}});
  window.__fOpen=()=>!pn.classList.contains('fh')})();
+
+/* ---- v13: top performers, department rings, Ctrl+K search ---- */
+(function(){
+ const avh=n=>`<span class="av" style="--h:${hue(n)}">${esc(String(n).split(' ').map(x=>x[0]||'').slice(0,2).join('').toUpperCase())}</span>`;
+ function extra(){
+  let box=$('#xtra');
+  if(!ses.length){if(box)box.remove();return}
+  if(!box){box=document.createElement('div');box.id='xtra';box.className='xtra';$('#kpis').insertAdjacentElement('afterend',box)}
+  const rows=agg(fl()).filter(r=>r.q.n>=3).map(r=>({e:r.e,r:rateOf(r.q)})).filter(x=>x.r!=null).sort((a,b)=>b.r-a.r||a.e.name.localeCompare(b.e.name)).slice(0,3);
+  const dm=new Map();fl().forEach(s=>{const d=s.e.dept||'-';if(!dm.has(d))dm.set(d,[]);dm.get(d).push(s)});
+  const dp=[...dm].map(([d,l])=>({d,r:rateOf(stats(l))})).filter(x=>x.r!=null).sort((a,b)=>b.r-a.r).slice(0,4);
+  const C=2*Math.PI*17;
+  box.innerHTML=`<div class="card xc"><h3>Top on-time</h3>${rows.length?rows.map((x,i)=>`<button class="xr" data-e="${esc(x.e.id)}" type="button"><span class="md m${i+1}">${i+1}</span>${avh(x.e.name)}<span class="xn"><b>${esc(x.e.name)}</b><small>${esc(x.e.dept||'')}</small></span><span class="xp">${x.r.toFixed(0)}%</span></button>`).join(''):'<p class="sub2">Not enough data yet.</p>'}</div>`+
+  `<div class="card xc"><h3>By department</h3>${dp.length?dp.map(x=>`<div class="xd"><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="17" fill="none" stroke="var(--line)" stroke-width="5"/><circle cx="22" cy="22" r="17" fill="none" stroke="${x.r>=95?'var(--good)':x.r>=85?'var(--warn)':'var(--bad)'}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-x.r/100)}" transform="rotate(-90 22 22)"/></svg><span class="xn"><b>${esc(x.d)}</b><small>${x.r.toFixed(0)}% attendance</small></span></div>`).join(''):'<p class="sub2">No departments yet.</p>'}</div>`;
+  box.querySelectorAll('.xr').forEach(b=>b.onclick=()=>openEmp(b.dataset.e));
+ }
+ const _r=render;render=function(){_r.apply(this,arguments);try{extra()}catch(e){}};try{extra()}catch(e){}
+ // command search
+ const ov=document.createElement('div');ov.id='cmdk';ov.hidden=true;ov.innerHTML='<div class="cmd" role="dialog" aria-modal="true" aria-label="Search"><input id="cmdq" type="text" placeholder="Search employees or pages..." autocomplete="off" aria-label="Search"><ul id="cmdr" role="listbox"></ul><div class="ch">Up/Down to move, Enter to open, Esc to close</div></div>';
+ document.body.appendChild(ov);
+ const q=ov.querySelector('#cmdq'),ul=ov.querySelector('#cmdr');let items=[],ix=0;
+ const pages=[['Shifts','s-shifts'],['Trend and attention','s-trend'],['Heatmap','s-heat'],['Reports','s-rep'],['Employees','s-emp']];
+ function build(){
+  const s=q.value.trim().toLowerCase();items=[];
+  if(!$('#app').hidden){
+   agg(ses).filter(r=>!s||String(r.e.name).toLowerCase().includes(s)||String(r.e.id).toLowerCase().includes(s)).slice(0,6).forEach(r=>items.push({t:r.e.name,m:(r.e.dept||'')+' | ID '+r.e.id,h:r.e.name,f:()=>openEmp(r.e.id)}));
+   pages.filter(p=>!s||p[0].toLowerCase().includes(s)).forEach(p=>items.push({t:'Go to '+p[0],m:'Page',h:p[0],f:()=>{const e=document.getElementById(p[1]);if(e)e.scrollIntoView({behavior:RM?'auto':'smooth'})}}));
+  }
+  if(!s||'alerts'.includes(s))items.push({t:'Open alerts',m:'Action',h:'Alerts',f:()=>{const b=$('#bell');b&&b.click()}});
+  items=items.slice(0,9);ix=0;
+  ul.innerHTML=items.length?items.map((x,i)=>`<li role="option" data-i="${i}" class="${i?'':'on'}">${avh(x.h)}<span class="xn"><b>${esc(x.t)}</b><small>${esc(x.m)}</small></span></li>`).join(''):'<li class="none">No match</li>';
+ }
+ function mv(d){if(!items.length)return;ix=(ix+d+items.length)%items.length;ul.querySelectorAll('li').forEach((l,i)=>l.classList.toggle('on',i==ix))}
+ function go(i){const x=items[i];if(!x)return;shut();x.f()}
+ let prev=null;function show(){prev=document.activeElement;ov.hidden=false;q.value='';build();q.focus()}
+ function shut(){ov.hidden=true;if(prev&&prev.focus)prev.focus()}
+ q.oninput=build;
+ q.onkeydown=e=>{if(e.key==='ArrowDown'){e.preventDefault();mv(1)}else if(e.key==='ArrowUp'){e.preventDefault();mv(-1)}else if(e.key==='Enter'){e.preventDefault();go(ix)}};
+ ul.onclick=e=>{const l=e.target.closest('li[data-i]');if(l)go(+l.dataset.i)};
+ ov.onclick=e=>{if(e.target===ov)shut()};
+ addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();ov.hidden?show():shut()}else if(e.key==='Escape'&&!ov.hidden)shut()});
+ const rb=document.getElementById('rail');if(rb){const b=document.createElement('button');b.type='button';b.className='rbtn';b.id='cmdbtn';b.title='Search (Ctrl+K)';b.innerHTML='<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="rl">Search</span>';b.onclick=show;rb.insertBefore(b,rb.firstChild.nextSibling||null)}
+})();
