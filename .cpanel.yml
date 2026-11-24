@@ -1,0 +1,8 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/heptix/public_html/att.heptix.ae/
+    - /bin/mkdir -p $DEPLOYPATH/assets $DEPLOYPATH/data
+    - /bin/cp -f *.php .htaccess $DEPLOYPATH
+    - /bin/cp -Rf assets/. $DEPLOYPATH/assets/
+    - /bin/cp -f data/.htaccess $DEPLOYPATH/data/.htaccess
