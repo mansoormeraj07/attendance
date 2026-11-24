@@ -16,7 +16,7 @@ $sub = sub_state($me) + ['now' => time()];
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title><?= h($B['name']) ?> - Attendance</title>
+<title><?= h($B['name']) ?> - Attendance</title><link rel="manifest" href="manifest.php"><meta name="theme-color" content="#070b16"><link rel="apple-touch-icon" href="assets/icons/icon-192.png">
 <?php if ($B['logo']): ?><link rel="icon" href="<?= h($B['logo']) ?>"><?php endif; ?>
 <style>
 <?= brand_css($B) ?>
@@ -511,5 +511,5 @@ const SUB=<?= jx($sub) ?>,CSRF=<?= jx(csrf()) ?>,CFG=<?= jx(settings()) ?>,ASG0=
 let RAW=<?= jx($d['rows']) ?>,SRC=<?= jx($d['meta']['file'] ?? '') ?>;
 </script>
 <script src="assets/app.js?v=<?= $v('app.js') ?>"></script>
-</body>
+<script src="assets/pwa.js?v=1"></script></body>
 </html>

@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $ini = strtoupper(substr($B['name'], 0, 1));
 $av = function ($f) { return @filemtime(__DIR__ . '/assets/' . $f) ?: 1; };
 ?><!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sign in - <?= h($B['name']) ?></title><?php if ($B['logo']): ?><link rel="icon" href="<?= h($B['logo']) ?>"><?php endif; ?>
+<title>Sign in - <?= h($B['name']) ?></title><link rel="manifest" href="manifest.php"><meta name="theme-color" content="#070b16"><link rel="apple-touch-icon" href="assets/icons/icon-192.png"><?php if ($B['logo']): ?><link rel="icon" href="<?= h($B['logo']) ?>"><?php endif; ?>
 <style><?= brand_css($B) ?></style>
 <link rel="stylesheet" href="assets/auth.css?v=<?= $av('auth.css') ?>">
 </head><body class="auth">
@@ -107,4 +107,4 @@ function tick(){const d=new Date(),m=d.getHours()*60+d.getMinutes()+d.getSeconds
  const a=inS(m,S.m.s,S.m.e),b=inS(m,S.e.s,S.e.e);
  $('#now').textContent=a&&b?'Both shifts on site':a?'Morning shift on site':b?'Evening shift on site':'Between shifts'}
 tick();setInterval(tick,1000);
-</script></body></html>
+</script><script src="assets/pwa.js?v=1"></script></body></html>
