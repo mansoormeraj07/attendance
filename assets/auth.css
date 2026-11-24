@@ -51,7 +51,7 @@ h1.name{margin:0;font-size:clamp(30px,4.6vw,52px);line-height:1.05;letter-spacin
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--mut)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .chips{display:flex;gap:10px;flex-wrap:wrap;margin:0;padding:0;list-style:none}
-.chips li{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);border-radius:99px;padding:6px 13px;font-size:13.5px;color:#CFD9EC;backdrop-filter:blur(6px)}
+.chips li{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);border-radius:99px;padding:6px 13px;font-size:13.5px;color:#CFD9EC}
 
 /* glass card */
 .glass{position:relative;width:min(400px,100%);padding:30px;border-radius:22px;background:rgba(10,16,30,.62);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
@@ -125,7 +125,7 @@ label{display:block;font-size:12.5px;color:var(--mut);margin:0 0 5px;letter-spac
 /* ---- split cinematic layout ---- */
 .stage{max-width:none;padding:0;gap:0;grid-template-columns:minmax(0,1.3fr) minmax(0,.9fr);align-items:stretch}
 .hero{padding:clamp(24px,4.5vw,64px) clamp(20px,5vw,72px);justify-content:center;gap:clamp(14px,2.4vh,26px)}
-.panel{background:linear-gradient(180deg,rgba(8,13,28,.9),rgba(5,9,20,.96));border-left:1px solid rgba(255,255,255,.08);padding:30px;backdrop-filter:blur(8px)}
+.panel{background:linear-gradient(180deg,rgba(8,13,28,.9),rgba(5,9,20,.96));border-left:1px solid rgba(255,255,255,.08);padding:30px}
 .brow{display:flex;align-items:center;gap:14px}.brow .logo{width:52px;height:52px}.brow .logo .ring{inset:-3px;border-radius:17px}.brow .logo .tile{border-radius:15px}.brow .logo img{max-width:40px;max-height:40px}.brow .logo b{font-size:24px}
 .bn{font-weight:800;font-size:19px;letter-spacing:-.01em}
 h1.name.hl{font-size:clamp(34px,5vw,58px);line-height:1.04;max-width:12em;margin:0 0 10px}
@@ -136,3 +136,11 @@ h1.name.hl{font-size:clamp(34px,5vw,58px);line-height:1.04;max-width:12em;margin
 @media(max-width:860px){.stage{grid-template-columns:1fr}.panel{border-left:0;border-top:1px solid rgba(255,255,255,.08)}.hero{align-items:center;text-align:center}.brow{justify-content:center}.stats{justify-content:center}.globe{opacity:.3}}
 @media(prefers-reduced-motion:reduce){.globe,.globe i{animation:none!important}}
 .note{margin:0 0 12px;padding:11px 13px;border-radius:12px;font-size:13.5px;color:#FFE2A8;background:rgba(240,180,41,.12);border:1px solid rgba(240,180,41,.4)}
+
+/* v15 performance: Lite mode (auto on weaker devices, or ?lite=1) and pause when the tab is hidden */
+html.lite .orb,html.lite .stars,html.lite .globe,html.lite .glass:after{display:none!important}
+html.lite *,html.lite *:before,html.lite *:after{animation-duration:.001s!important;animation-iteration-count:1!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;filter:none!important}
+html.lite .mock{transform:none!important;transition:none!important}
+html.lite .glass{background:rgba(10,16,30,.92)}
+html.lite .grid,html.lite .gridl{animation:none!important}
+html.paused *,html.paused *:before,html.paused *:after{animation-play-state:paused!important}

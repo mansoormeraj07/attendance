@@ -41,7 +41,10 @@ $av = function ($f) { return @filemtime(__DIR__ . '/assets/' . $f) ?: 1; };
 <title>Sign in - <?= h($B['name']) ?></title><link rel="manifest" href="manifest.php"><meta name="theme-color" content="#070b16"><link rel="apple-touch-icon" href="assets/icons/icon-192.png"><?php if ($B['logo']): ?><link rel="icon" href="<?= h($B['logo']) ?>"><?php endif; ?>
 <style><?= brand_css($B) ?></style>
 <link rel="stylesheet" href="assets/auth.css?v=<?= $av('auth.css') ?>">
-</head><body class="auth">
+<script>(function(){var q=location.search,n=navigator,cn=n.connection||{},r=matchMedia('(prefers-reduced-motion: reduce)').matches;
+var weak=(n.hardwareConcurrency&&n.hardwareConcurrency<=4)||(n.deviceMemory&&n.deviceMemory<=4)||cn.saveData||/(^|-)(2|3)g$/.test(cn.effectiveType||'')||r;
+if(/[?&]full=1/.test(q))weak=false;if(/[?&]lite=1/.test(q))weak=true;if(weak)document.documentElement.classList.add('lite');
+document.addEventListener('visibilitychange',function(){document.documentElement.classList.toggle('paused',document.hidden)})})();</script></head><body class="auth">
 <div class="bg" aria-hidden="true"><div class="globe"><i></i><i></i><i></i><i></i></div><div class="stars"></div><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i><div class="grid"></div></div>
 <main class="stage">
  <section class="hero">
@@ -87,7 +90,7 @@ lf.addEventListener('submit',async e=>{const go=$('#go');if(!HAS||!window.fetch)
   lf.classList.remove('shake');void lf.offsetWidth;lf.classList.add('shake');$('#p').value='';$('#p').focus()}
  catch(x){lf.submit()}});
 /* 3D tilt of the sign-in card and the dashboard preview */
-if(!RM&&matchMedia('(hover:hover)').matches){const tl=(el,k)=>{addEventListener('pointermove',e=>{const x=e.clientX/innerWidth-.5,y=e.clientY/innerHeight-.5;el.style.setProperty('--rx',(-y*k).toFixed(2)+'deg');el.style.setProperty('--ry',(x*k*1.4).toFixed(2)+'deg')})};tl(lf,7);tl($('#mock'),10)}
+if(!RM&&!document.documentElement.classList.contains('lite')&&matchMedia('(hover:hover)').matches){const tl=(el,k)=>{addEventListener('pointermove',e=>{const x=e.clientX/innerWidth-.5,y=e.clientY/innerHeight-.5;el.style.setProperty('--rx',(-y*k).toFixed(2)+'deg');el.style.setProperty('--ry',(x*k*1.4).toFixed(2)+'deg')})};tl(lf,7);tl($('#mock'),10)}
 /* count-up in the preview */
 $('#mock').querySelectorAll('[data-n]').forEach(b=>{const n=+b.dataset.n,d=+(b.dataset.d||0),s=b.dataset.s||'';if(RM){b.textContent=n.toLocaleString()+s;return}let t0=null;const f=t=>{t0=t0||t;const k=Math.min(1,(t-t0)/1500),v=n*(1-Math.pow(1-k,3));b.textContent=v.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d})+s;if(k<1)requestAnimationFrame(f)};setTimeout(()=>requestAnimationFrame(f),500)});
 /* 24 hour shift dial with live needle */
@@ -106,5 +109,5 @@ function tick(){const d=new Date(),m=d.getHours()*60+d.getMinutes()+d.getSeconds
  $('#clk').textContent=d.toLocaleTimeString('en-GB',{hour12:false});
  const a=inS(m,S.m.s,S.m.e),b=inS(m,S.e.s,S.e.e);
  $('#now').textContent=a&&b?'Both shifts on site':a?'Morning shift on site':b?'Evening shift on site':'Between shifts'}
-tick();setInterval(tick,1000);
+tick();setInterval(function(){if(!document.hidden)tick()},1000);
 </script><script src="assets/pwa.js?v=1"></script></body></html>
