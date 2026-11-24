@@ -43,7 +43,7 @@ $av = function ($f) { return @filemtime(__DIR__ . '/assets/' . $f) ?: 1; };
 <link rel="stylesheet" href="assets/auth.css?v=<?= $av('auth.css') ?>">
 <script>(function(){var q=location.search,n=navigator,cn=n.connection||{},r=matchMedia('(prefers-reduced-motion: reduce)').matches;
 var weak=(n.hardwareConcurrency&&n.hardwareConcurrency<=4)||(n.deviceMemory&&n.deviceMemory<=4)||cn.saveData||/(^|-)(2|3)g$/.test(cn.effectiveType||'')||r;
-if(/[?&]full=1/.test(q))weak=false;if(/[?&]lite=1/.test(q))weak=true;if(weak)document.documentElement.classList.add('lite');
+weak=true;if(/[?&]full=1/.test(q))weak=false;if(weak)document.documentElement.classList.add('lite');
 document.addEventListener('visibilitychange',function(){document.documentElement.classList.toggle('paused',document.hidden)})})();</script></head><body class="auth">
 <div class="bg" aria-hidden="true"><div class="globe"><i></i><i></i><i></i><i></i></div><div class="stars"></div><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i><div class="grid"></div></div>
 <main class="stage">
