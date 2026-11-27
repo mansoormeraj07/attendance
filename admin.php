@@ -1,9 +1,10 @@
 <?php
-require __DIR__ . '/lib.php'; need('admin');
-$B = brand();
+require __DIR__ . '/lib.php'; $ME = need('admin');
+$B = brand(); $TP = tfa_policy(); $tfaN = 0;
 $d = rj('data.json', ['meta' => null, 'rows' => []]); $m = $d['meta']; $us = users();
 $depts = array_values(array_unique(array_column($d['rows'], 2))); sort($depts);
 $S = settings();
+foreach ($us as $x) if (tfa_enrolled($x)) $tfaN++;
 $U = []; foreach ($us as $x) $U[$x['username']] = ['name' => $x['name'], 'role' => $x['role'], 'sub' => sub_state($x)];
 $EV = array_slice(rj('logins.json', []), 0, 300); $ON = rj('online.json', []); $now = time();
 $on5 = array_filter($ON, function ($v) use ($now) { return $v['t'] > $now - 300; });
@@ -132,6 +133,13 @@ button:hover:not(:disabled){border-color:rgba(91,140,255,.6)}
 <label>Weekly off day<select id="wo"><option value="-1">None</option><option value="0">Sunday</option><option value="5">Friday</option><option value="6">Saturday</option></select></label></div>
 <button class="p" id="ss">Save shift timings</button><div class="m" id="m2"></div></div>
 
+<div class="card"><h2>Two-step login</h2>
+<p class="s">Users type a 6 digit code from an authenticator app (Google, Microsoft, Authy, 2FAS and others) after their password. <?= $tfaN ?> of <?= count($us) ?> users have it on.</p>
+<div class="g"><label class="c" style="grid-column:1/-1"><input type="checkbox" id="tfon"<?= !empty($TP['on'])?' checked':'' ?>> Two-step login is available (untick to switch it OFF for everyone; nobody is asked for a code)</label>
+<label class="c" style="grid-column:1/-1"><input type="checkbox" id="tfmu"<?= !empty($TP['must'])?' checked':'' ?>> Make it mandatory from the date below</label>
+<label>Mandatory from<input type="date" id="tffr" value="<?= h(date('Y-m-d', (int)$TP['from'])) ?>"></label></div>
+<button class="p" id="tfs">Save</button><div class="m" id="mtf"></div></div>
+
 <div class="card"><h2>Users</h2>
 <p class="s"><b>Admin</b> manages everything. <b>View-only</b> sees the saved data (optionally one department). <b>Customer</b> sees none of your saved data: they upload their own file privately and download PDF or Excel reports.</p>
 <div class="sbx" style="margin:0 0 10px"><b>Welcome message</b> <span class="s">shown to a user one time, then it switches itself off.</span><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button id="wall">Show to all users</button><button id="wnone">Clear for all</button></div><div class="m" id="mw"></div></div>
@@ -144,10 +152,11 @@ button:hover:not(:disabled){border-color:rgba(91,140,255,.6)}
 <div class="sbx" data-u="<?= h($x['username']) ?>"<?= $r==='admin'?' hidden':'' ?>><div class="sbh"><b>Subscription</b><span class="tm-st" data-u="<?= h($x['username']) ?>"></span></div>
 <div class="sbc"><input type="number" class="tv" min="1" value="7" aria-label="Amount of time"><select class="tu" aria-label="Unit"><option value="m">minutes</option><option value="h">hours</option><option value="d" selected>days</option></select>
 <button data-t="set">Start now</button><button data-t="setl">Start at first login</button><button data-t="add">Add time</button><button data-t="clear">No limit</button><button data-t="expire">End now</button></div></div>
-<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button data-a="set" data-u="<?= h($x['username']) ?>">Save access</button><button data-a="pw" data-u="<?= h($x['username']) ?>">Reset password</button><button data-a="del" data-u="<?= h($x['username']) ?>">Delete</button></div><div class="m rm"></div></div><?php endforeach; ?>
+<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button data-a="set" data-u="<?= h($x['username']) ?>">Save access</button><button data-a="pw" data-u="<?= h($x['username']) ?>">Reset password</button><button data-a="del" data-u="<?= h($x['username']) ?>">Delete</button></div>
+<div class="s" style="margin-top:8px">Two-step: <b><?= tfa_enrolled($x)?'on':'not set up' ?></b><?= tfa_enrolled($x)?' <button data-a="tfr" data-u="'.h($x['username']).'">Reset 2-step</button>':'' ?> <label class="c" style="display:inline-flex"><input type="checkbox" class="tx"<?= !empty($x['tfa_x'])?' checked':'' ?>> Exempt from mandatory</label></div><div class="m rm"></div></div><?php endforeach; ?>
 <h2 style="margin-top:16px">Add a user</h2><div class="g">
 <label>Full name<input id="un"></label><label>Username<input id="uu" autocapitalize="none"></label>
-<label>Password (6+ characters)<input type="text" id="up" autocomplete="off"></label>
+<label>Password (10+ characters)<input type="text" id="up" autocomplete="off"></label>
 <label>Access<select id="ur"><option value="customer">Customer</option><option value="viewer">View-only</option><option value="admin">Admin</option></select></label>
 <label>Department (view-only)<select id="ud" disabled><option value="">All departments</option><?php foreach ($depts as $dp): ?><option value="<?= h($dp) ?>"><?= h($dp) ?></option><?php endforeach; ?></select></label></div>
 <label class="c"><input type="checkbox" id="uup" disabled> Can save new files for everyone</label>
@@ -208,10 +217,13 @@ $('#ua').onclick=async()=>{const b={name:$('#un').value,username:$('#uu').value.
  $('#shp').textContent=`Login page: ${url}\nUsername: ${b.username}\nPassword: ${b.password}`;$('#sh').hidden=false;$('#sh').scrollIntoView({block:'center'})};
 $('#shc').onclick=async()=>{try{await navigator.clipboard.writeText($('#shp').textContent);$('#shc').textContent='Copied'}catch(e){const s=getSelection(),r=document.createRange();r.selectNodeContents($('#shp'));s.removeAllRanges();s.addRange(r);$('#shc').textContent='Press Ctrl+C'}};
 $('#shd').onclick=()=>location.reload();
+$('#tfs').onclick=async()=>{const r=await api('tfa_policy',{on:$('#tfon').checked,must:$('#tfmu').checked,from:$('#tffr').value});say('#mtf',r.ok,r.msg)};
+document.addEventListener('change',e=>{if(e.target.classList.contains('tx')){const row=e.target.closest('.ur');ua('u_tfa_x',{username:row.querySelector('[data-a=set]').dataset.u,on:e.target.checked},row.querySelector('.rm'))}});
 $('#wall').onclick=async()=>{const r=await api('u_welall',{on:true});say('#mw',r.ok,r.msg);if(r.ok)setTimeout(()=>location.reload(),1100)};
 $('#wnone').onclick=async()=>{const r=await api('u_welall',{on:false});say('#mw',r.ok,r.msg);if(r.ok)setTimeout(()=>location.reload(),1100)};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const u=b.dataset.u,a=b.dataset.a,row=b.closest('.ur'),R=row.querySelector('.rm');
- if(a=='pw'){const p=prompt('New password for '+u+' (at least 6 characters)');if(p)ua('u_pw',{username:u,password:p},R)}
+ if(a=='pw'){const p=prompt('New password for '+u+' (at least 10 characters)');if(p)ua('u_pw',{username:u,password:p},R)}
+ else if(a=='tfr'){if(confirm('Reset two-step login for '+u+'? They can set it up again.'))ua('u_tfa_reset',{username:u},R)}
  else if(a=='del'){if(confirm(u==ME?'Delete your own account? You will be signed out. Make sure another admin exists.':'Delete '+u+'?'))ua('u_del',{username:u},R)}
  else if(a=='set')ua('u_set',{username:u,role:row.querySelector('.r').value,dept:row.querySelector('.d').value,up:row.querySelector('.u').checked,wel:row.querySelector('.w').checked},R)});
 
@@ -269,7 +281,7 @@ tiles();setInterval(tick,1000);
 <script>
 (()=>{const EV=<?= jx($EV) ?>,$=s=>document.querySelector(s);let n=12,f='all';
  const flag=c=>c&&c.length==2?String.fromCodePoint(...[...c.toUpperCase()].map(x=>127397+x.charCodeAt(0))):'';
- const T={login:['Signed in','g'],logout:['Signed out','m'],fail:['Wrong password','r'],lock:['Locked (5 wrong)','r'],timeout:['Timed out (idle)','o']};
+ const T={login:['Signed in','g'],logout:['Signed out','m'],fail:['Wrong password','r'],lock:['Locked (5 wrong)','r'],timeout:['Timed out (idle)','o'],tfa_on:['2-step turned on','g'],tfa_off:['2-step turned off','o'],tfa_reset:['2-step reset by admin','o']};
  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const ok=e=>f=='all'||(f=='login'&&e.ev=='login')||(f=='bad'&&(e.ev=='fail'||e.ev=='lock'))||(f=='new'&&e.new);
  const when=t=>{const d=new Date(t*1000),a=Date.now()-d,m=Math.floor(a/6e4);return (m<1?'just now':m<60?m+' min ago':m<1440?Math.floor(m/60)+' h ago':d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}))+'<span class="sm">'+d.toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</span>'};
@@ -281,4 +293,4 @@ tiles();setInterval(tick,1000);
   const b=new Blob(['\ufeff'+r.map(x=>x.map(q).join(',')).join('\r\n')],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='sign-in-activity.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
  draw()})();
 </script>
-</body></html>
+<?= tfa_banner($ME) ?></body></html>

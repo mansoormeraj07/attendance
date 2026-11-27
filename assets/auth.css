@@ -144,3 +144,12 @@ html.lite .mock{transform:none!important;transition:none!important}
 html.lite .glass{background:rgba(10,16,30,.92)}
 html.lite .grid,html.lite .gridl{animation:none!important}
 html.paused *,html.paused *:before,html.paused *:after{animation-play-state:paused!important}
+
+/* v18: two-step check, WhatsApp link, short screens, phone order */
+.hint2{margin:8px 0 0;font-size:13px;color:var(--mut)}
+.back2{display:inline-block;margin-top:10px;font-size:13px;color:#9fc0ff;text-decoration:none}.back2:hover{text-decoration:underline}
+#c{letter-spacing:.2em;font-size:20px;text-align:center}
+.foot .wa{display:block;margin:10px auto 0;width:max-content;padding:8px 16px;border-radius:99px;border:1px solid rgba(61,220,151,.5);color:#6fe8bd;text-decoration:none;font-weight:600;font-size:13.5px}
+.foot .wa:hover{background:rgba(61,220,151,.12)}
+@media(max-width:860px){.panel{order:-1}.hrow,.stats{display:none}.hero{gap:12px}}
+@media(max-height:760px) and (min-width:861px){.stats,.hero .sub{display:none}.hero{gap:14px}}

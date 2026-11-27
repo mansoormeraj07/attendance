@@ -4,6 +4,7 @@ header('Content-Type: application/json');
 $m = me();
 if (!$m) { http_response_code(403); echo '{"ok":0,"msg":"Please sign in again."}'; exit; }
 if (sub_state($m)['s'] === 'expired') { http_response_code(403); echo '{"ok":0,"expired":1,"msg":"Your demo subscription has ended."}'; exit; }
+if (tfa_due($m)) { http_response_code(403); echo '{"ok":0,"msg":"Set up two-step login first (tfa.php)."}'; exit; }
 $in = json_decode(file_get_contents('php://input'), true) ?: [];
 if (!hash_equals(csrf(), (string)($in['csrf'] ?? ''))) { http_response_code(403); echo '{"ok":0,"msg":"Session expired. Reload the page."}'; exit; }
 function cut($s, $n) { $s = (string)$s; return function_exists('mb_substr') ? mb_substr($s, 0, $n) : substr($s, 0, $n); }
@@ -89,6 +90,13 @@ if ($a === 'logo_del') {
   out(1, 'Logo removed.');
 }
 
+if ($a === 'tfa_policy') {
+  $p = tfa_policy(); $p['on'] = !empty($in['on']) ? 1 : 0; $p['must'] = !empty($in['must']) ? 1 : 0;
+  $d = (string)($in['from'] ?? '');
+  if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && ($ts = strtotime($d . ' 00:00:00')) !== false) $p['from'] = $ts;
+  out(wj('policy.json', $p) ? 1 : 0, $p['on'] ? 'Two-step login settings saved.' : 'Two-step login is switched off for everyone.');
+}
+
 function secs($v, $unit) {
   $v = (float)$v; $u = ['m' => 60, 'h' => 3600, 'd' => 86400][$unit] ?? 0;
   $n = (int)round($v * $u);
@@ -108,7 +116,7 @@ if (strpos($a, 'u_') === 0) {
   if ($a === 'u_add') {
     if (!preg_match('/^[a-z0-9._-]{3,30}$/', $un)) out(0, 'Username: 3 to 30 letters, numbers, dot, dash or underscore.');
     if ($find($un) >= 0) out(0, 'That username already exists.');
-    if (strlen($pw) < 6) out(0, 'Password needs at least 6 characters.');
+    if (strlen($pw) < 10) out(0, 'Password needs at least 10 characters.');
     $nm = cut(trim((string)($in['name'] ?? '')), 60);
     $nu = ['username'=>$un,'name'=>$nm !== '' ? $nm : $un,'role'=>$role,'dept'=>$dept,'up'=>$up,'hash'=>password_hash($pw, PASSWORD_DEFAULT),'last'=>null,'exp'=>null,'dur'=>null,'startOn'=>null,'wel'=>!empty($in['wel'])];
     $tm = $in['timer'] ?? null;
@@ -121,8 +129,10 @@ if (strpos($a, 'u_') === 0) {
     $us[] = $nu;
   } else {
     $i = $find($un); if ($i < 0) out(0, 'User not found.');
-    if ($a === 'u_pw') { if (strlen($pw) < 6) out(0, 'Password needs at least 6 characters.'); $us[$i]['hash'] = password_hash($pw, PASSWORD_DEFAULT); }
+    if ($a === 'u_pw') { if (strlen($pw) < 10) out(0, 'Password needs at least 10 characters.'); $us[$i]['hash'] = password_hash($pw, PASSWORD_DEFAULT); }
     elseif ($a === 'u_del') { unset($us[$i]); }
+    elseif ($a === 'u_tfa_reset') { unset($us[$i]['tfa']); log_event('tfa_reset', $us[$i]['username']); }
+    elseif ($a === 'u_tfa_x') { if (!empty($in['on'])) $us[$i]['tfa_x'] = 1; else unset($us[$i]['tfa_x']); }
     elseif ($a === 'u_set') { $us[$i]['role'] = $role; $us[$i]['dept'] = $dept; $us[$i]['up'] = $up; $us[$i]['wel'] = !empty($in['wel']); if ($role === 'admin') { $us[$i]['exp'] = $us[$i]['dur'] = $us[$i]['startOn'] = null; } }
     elseif ($a === 'u_timer') {
       if ($us[$i]['role'] === 'admin') out(0, 'Admins never expire, so they cannot have a timer.');

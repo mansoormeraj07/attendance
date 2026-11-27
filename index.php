@@ -538,5 +538,5 @@ const SUB=<?= jx($sub) ?>,CSRF=<?= jx(csrf()) ?>,CFG=<?= jx(settings()) ?>,ASG0=
 let RAW=<?= jx($d['rows']) ?>,SRC=<?= jx($d['meta']['file'] ?? '') ?>;
 </script>
 <script src="assets/app.js?v=<?= $v('app.js') ?>"></script>
-<script src="assets/pwa.js?v=1"></script></body>
+<script src="assets/pwa.js?v=1"></script><?= tfa_banner($me) ?></body>
 </html>
