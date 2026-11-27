@@ -2,10 +2,11 @@
 const $=s=>document.querySelector(s);
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const NM={m:'Morning',e:'Evening',o:'Other'};
-const P={m:{n:'Morning',s:540,e:1080},e:{n:'Evening',s:900,e:1560},grace:10,tol:120,ot:30,off:0};
+const NM={m:'Morning',e:'Evening',n:'Night',o:'Other'};
+const P={m:{n:'Morning',s:540,e:1080},e:{n:'Evening',s:900,e:1560},n:{n:'Night',s:1200,e:1920,on:false},grace:10,tol:120,ot:30,off:0};
+const SHS=()=>P.n.on?['m','e','n']:['m','e'];
 const LSK='sd_cfg_'+USER.user;
-function applyCfg(c){P.m.s=c.m.s;P.m.e=c.m.e;P.e.s=c.e.s;P.e.e=c.e.e;P.grace=c.grace;P.ot=c.ot;P.tol=c.tol;P.off=c.off}
+function applyCfg(c){P.m.s=c.m.s;P.m.e=c.m.e;P.e.s=c.e.s;P.e.e=c.e.e;const nn=c.n||{s:1200,e:1920,on:0};P.n.s=nn.s;P.n.e=nn.e;P.n.on=!!+nn.on;P.grace=c.grace;P.ot=c.ot;P.tol=c.tol;P.off=c.off}
 applyCfg(CFG);
 if(USER.role==='customer'){try{const o=JSON.parse(localStorage.getItem(LSK)||'null');if(o&&o.m&&o.e)applyCfg(o)}catch(e){}}
 const ASGK='sd_asg_'+USER.user,CANASG=USER.role==='admin'||USER.role==='customer';
@@ -37,7 +38,7 @@ function mkO(e,p,k,d){const s={e,a:p,b:p,k,d,h:0,late:0,early:0,ot:0,noin:1};
  if(k!='o'){const en=d*1440+P[k].e;s.early=en-p>P.grace?en-p:0;s.ot=p-en>=P.ot?p-en:0}return s}
 function mk(e,a,b){
  const t=a%1440,day=a-t;let k='o',bd=1e9;
- for(const x of['m','e']){const d=Math.abs(t-P[x].s);if(d<bd&&d<=P.tol){bd=d;k=x}}
+ for(const x of SHS()){const d=Math.abs(t-P[x].s);if(d<bd&&d<=P.tol){bd=d;k=x}}
  const s={e,a,b,k,d:day/1440,h:b?(b-a)/60:0,late:0,early:0,ot:0};
  if(k!='o'){const S=P[k];s.late=t-S.s>P.grace?t-S.s:0;
   if(b){const end=day+S.e;s.early=end-b>P.grace?end-b:0;s.ot=b-end>=P.ot?b-end:0}}
@@ -51,6 +52,7 @@ function build(){
  let dmin=1e9,dmax=-1e9;for(const r of RAW){const x=dn(r[3]);if(x!=null){if(x<dmin)dmin=x;if(x>dmax)dmax=x}}
  const med=a=>{const z=a.slice().sort((x,y)=>x-y);return z[z.length>>1]};
  ses=[];const cov=new Map(),first=new Map(),mine=new Map(),fixed=new Map();
+ const NL=P.n.on?Math.max(300,(P.n.e%1440)+90):300; /* with a Night shift on, an out punch up to its end (plus 90 min) pairs across midnight */
  for(const e of by.values()){
   const ps=[...e.p].sort((x,y)=>x-y),cv=new Set(),fk=ASG[String(e.id)];let my=[];
   if(fk==='m'||fk==='e'){
@@ -70,11 +72,11 @@ function build(){
     if(a%1440<300){cv.add(Math.floor(a/1440)-1);i++;continue}
     const b=ps[i+1],near=b!==undefined&&b-a<30,gap=b!==undefined?Math.floor(b/1440)-Math.floor(a/1440):9;
     /* an out punch is only paired across midnight when it is a night-time punch (before 5 AM) */
-    const fit=b!==undefined&&!near&&b-a<=960&&(gap==0||(gap==1&&a%1440>=720&&b%1440<300));
+    const fit=b!==undefined&&!near&&b-a<=960&&(gap==0||(gap==1&&a%1440>=720&&b%1440<NL));
     if(fit)my.push(mk(e,a,b));else lones.push(a);
     i+=(fit||near)?2:1}
    const full=my.filter(s=>s.b&&Math.floor(s.b/1440)===Math.floor(s.a/1440));
-   const c={m:0,e:0,o:0};my.forEach(s=>c[s.k]++);const dom=Object.keys(c).sort((x,y)=>c[y]-c[x])[0];
+   const c={m:0,e:0,n:0,o:0};my.forEach(s=>c[s.k]++);const dom=Object.keys(c).sort((x,y)=>c[y]-c[x])[0];
    let iT=null,oT=null;if(full.length>=3){iT=med(full.map(s=>s.a%1440));oT=med(full.map(s=>s.b%1440))}
    /* a lone punch close to this person's usual out time is an out punch with the in punch missing */
    for(const a of lones){const t=a%1440;
@@ -85,7 +87,7 @@ function build(){
  const cnt={};ses.forEach(s=>cnt[s.d]=(cnt[s.d]||0)+1);
  const L=dates[dates.length-1],pv=dates[dates.length-2];
  SK=dates.length>2&&cnt[L]<.7*cnt[pv]?L:null;
- for(const e of by.values()){const my=mine.get(e.id),have=new Set(my.map(s=>s.d)),c={m:0,e:0,o:0};my.forEach(s=>c[s.k]++);
+ for(const e of by.values()){const my=mine.get(e.id),have=new Set(my.map(s=>s.d)),c={m:0,e:0,n:0,o:0};my.forEach(s=>c[s.k]++);
   const k=fixed.get(e.id)||Object.keys(c).sort((x,y)=>c[y]-c[x])[0]||'o';
   for(const d of dates){if(d<first.get(e.id)||d==SK||have.has(d)||cov.get(e.id).has(d)||dd(d).getUTCDay()==P.off)continue;
    ses.push({e,a:d*1440,b:null,k,d,h:0,late:0,early:0,ot:0,abs:1})}}
@@ -108,10 +110,29 @@ function stats(l){const pr=l.filter(s=>!s.abs),done=pr.filter(s=>s.b&&!s.noin);
  avg:done.length?done.reduce((a,s)=>a+s.h,0)/done.length:0,late:pr.filter(s=>s.late).length,
  ot:pr.reduce((a,s)=>a+s.ot,0),miss:pr.filter(s=>(!s.b||s.noin)&&!s.open).length}}
 function agg(l){const m=new Map();for(const s of l){if(!m.has(s.e.id))m.set(s.e.id,{e:s.e,l:[]});m.get(s.e.id).l.push(s)}
- return[...m.values()].map(r=>{r.q=stats(r.l);const c={m:0,e:0,o:0};r.l.forEach(s=>c[s.k]++);r.k=Object.keys(c).sort((a,b)=>c[b]-c[a])[0];return r})}
+ return[...m.values()].map(r=>{r.q=stats(r.l);const c={m:0,e:0,n:0,o:0};r.l.forEach(s=>c[s.k]++);r.k=Object.keys(c).sort((a,b)=>c[b]-c[a])[0];return r})}
 function statusText(s){if(s.abs)return'Absent';const p=[];if(s.noin)p.push('No in punch');else if(s.open)p.push('Out punch not in file yet');else if(!s.b)p.push('No out punch');
  if(s.late)p.push('Late '+mn(s.late));if(s.early)p.push('Left '+mn(s.early)+' early');if(s.ot)p.push('OT '+mn(s.ot));
  return p.length?p.join(', '):(s.k=='o'?'Other timing':'On time')}
+
+/* ---------- day lines: timeline bar + weekly groups ---------- */
+function tbar(s){
+ const O=240,W=1440,pos=v=>Math.max(0,Math.min(100,(v-O)/W*100));let h='';
+ if(s.k!='o'&&P[s.k]){const a=pos(P[s.k].s),b=pos(P[s.k].e);h+=`<u style="left:${a}%;width:${Math.max(1,b-a)}%"></u>`}
+ if(!s.abs&&!s.noin){const rel=s.a-s.d*1440,a=pos(rel);
+  if(s.b){const b=pos(rel+(s.b-s.a));h+=`<b class="w${s.k}" style="left:${a}%;width:${Math.max(1.2,b-a)}%"></b>`}
+  else h+=`<b class="wx" style="left:${a}%;width:3%"></b>`}
+ return `<div class="tbw" aria-hidden="true"><div class="tb">${h}</div></div>`}
+function lineHtml(s,pl){
+ const left=`<span>${dl(s.d)} <span class="pill ${s.k}">${NM[s.k]}</span></span>`;
+ if(s.abs)return `<div class="ln">${left}<span class="bad">Absent | no punch</span></div>`;
+ return `<div class="ln">${left}<span>${inS(s)} to ${outS(s)}${s.b&&!s.noin?' | '+hs(s.h*60):''}</span><span>${s.late?`<span class="pill bad">Late ${mn(s.late)}</span> `:''}${s.early?`<span class="pill bad">Left ${mn(s.early)} early</span> `:''}${s.ot?`<span class="pill good">${pl?'+'+mn(s.ot)+' overtime':'OT '+mn(s.ot)}</span>`:''}${s.b&&!s.noin&&s.h>14?'<span class="pill warn" title="Check this day: more than 14 hours between first and last punch">Long day</span>':''}</span>${tbar(s)}</div>`}
+const wkStart=d=>d-((dd(d).getUTCDay()+6)%7);
+function lines(l,pl){
+ const a=l.slice().sort((x,y)=>y.a-x.a),out=[];let cur=null,g=[];
+ const flush=()=>{if(!g.length)return;const pr=g.filter(s=>!s.abs),hrs=pr.reduce((t,s)=>t+(s.b&&!s.noin?s.h:0),0),ot=g.reduce((t,s)=>t+(s.ot||0),0),lt=g.filter(s=>s.late).length,ab=g.filter(s=>s.abs).length;
+  out.push(`<div class="wk"><b>Week of ${dl(cur)}</b><span>${pr.length} present${ab?` | <i class="bad">${ab} absent</i>`:''}${lt?` | <i class="bad">${lt} late</i>`:''} | ${hrs.toFixed(1)}h${ot?` | OT ${hs(ot)}`:''}</span></div>`);g.forEach(s=>out.push(lineHtml(s,pl)))};
+ for(const s of a){const k=wkStart(s.d);if(k!==cur){flush();cur=k;g=[]}g.push(s)}flush();return out.join('')}
 const tone=s=>s.abs||s.noin||(!s.b&&!s.open)||s.late||s.early?'bad':(s.ot||s.k!='o'?'good':'mut');
 const inS=s=>s.noin?'<span class="bad">no in punch</span>':t12(s.a);
 const outS=s=>s.open?'<span class="sub2">out not in file yet</span>':(s.b?t12(s.b):'<span class="bad">no out punch</span>');
@@ -123,8 +144,9 @@ function ruler(){
  const bar=(k,y,fill,txt)=>{const S=P[k],a=S.s/60,b=S.e/60;
   return `<rect x="${x(a)}" y="${y}" width="${Math.max(2,x(b)-x(a))}" height="24" rx="6" fill="${fill}"/><text x="${x(a)+8}" y="${y+16}" style="fill:${txt};font-weight:600;font-size:11px">${S.n} ${t12(S.s).replace(':00','')} - ${t12(S.e).replace(':00','')}</text>`};
  const os=Math.max(P.m.s,P.e.s)/60,oe=Math.min(P.m.e,P.e.e)/60;
- g+=bar('m',26,'var(--m)','#1b1300')+bar('e',54,'var(--e)','var(--onE)');
- if(oe>os)g+=`<rect x="${x(os)}" y="23" width="${x(oe)-x(os)}" height="58" rx="6" fill="none" stroke="var(--ink)" stroke-dasharray="3 3"/><text x="${x((os+oe)/2)}" y="94" text-anchor="middle">Both shifts on site</text>`;
+ g+=bar('m',26,'var(--m)','#1b1300')+bar('e',54,'var(--e)','var(--onE)')+(P.n.on?bar('n',82,'var(--n)','#1b0b2e'):'');
+ $('#ruler').setAttribute('viewBox','0 0 720 '+(P.n.on?132:100));
+ if(oe>os)g+=`<rect x="${x(os)}" y="23" width="${x(oe)-x(os)}" height="58" rx="6" fill="none" stroke="var(--ink)" stroke-dasharray="3 3"/><text x="${x((os+oe)/2)}" y="${P.n.on?126:94}" text-anchor="middle">Both shifts on site</text>`;
  $('#ruler').innerHTML=g}
 
 function ring(r){const C=2*Math.PI*23,rc=r==null?'var(--mut)':r>=95?'var(--good)':r>=85?'var(--warn)':'var(--bad)';
@@ -139,13 +161,13 @@ function render(){
  const l=fl(),s=stats(l),L=dates[dates.length-1],r=rateOf(s);
  $('#dfrom').value=F.from==null?'':iso(F.from);$('#dto').value=F.to==null?'':iso(F.to);
  $('#range').innerHTML=[[7,'Last 7 days'],[14,'Last 14 days'],[30,'Last 30 days'],[0,'All dates']].map(([n,t])=>`<button data-r="${n}" aria-pressed="${n?(F.to==L&&F.from==L-n+1):F.from==null}">${t}</button>`).join('');
- $('#segShift').innerHTML=[['all','All'],['m','Morning'],['e','Evening'],['o','Other']].map(([k,t])=>`<button data-s="${k}" aria-pressed="${F.shift==k}">${t}</button>`).join('');
+ $('#segShift').innerHTML=[['all','All'],['m','Morning'],['e','Evening']].concat(P.n.on?[['n','Night']]:[],[['o','Other']]).map(([k,t])=>`<button data-s="${k}" aria-pressed="${F.shift==k}">${t}</button>`).join('');
  const kp=(v,l,c)=>`<div class="kpi ${c||''}"><div><b>${v}</b><span>${l}</span></div></div>`;
  $('#kpis').innerHTML=`<div class="kpi">${ring(r)}<div><b>${rtxt(s)}</b><span>Attendance</span></div></div>`+
   kp(s.n,'Present days')+kp(s.abs,'Absent days',s.abs?'bad':'')+kp(s.late,'Late arrivals',s.late?'bad':'')+kp(s.miss,'Missing punch',s.miss?'bad':'')+kp(hs(s.ot),'Overtime','good');
  const all=fl(true);
- $('#cards').innerHTML=['m','e','o'].map(k=>{const q=stats(all.filter(x=>x.k==k));
-  const nm=NM[k],tm=k=='o'?'outside both shifts':t12(P[k].s)+' - '+t12(P[k].e);
+ $('#cards').innerHTML=SHS().concat(['o']).map(k=>{const q=stats(all.filter(x=>x.k==k));
+  const nm=NM[k],tm=k=='o'?'outside the shifts':t12(P[k].s)+' - '+t12(P[k].e);
   return `<div class="card sc ${k}${F.shift==k?' on':''}" data-s="${k}" tabindex="0" role="button" aria-label="Filter ${nm}"><h3>${nm}<small>${tm}</small></h3><div class="st">
   <div><b>${q.people}</b><span>People</span></div><div><b>${q.avg?q.avg.toFixed(1):'-'}</b><span>Avg hours</span></div><div><b class="${q.abs?'bad':''}">${q.abs}</b><span>Absent</span></div>
   <div><b class="${q.late?'bad':''}">${k=='o'?'-':q.late}</b><span>Late</span></div><div><b>${k=='o'?'-':hs(q.ot)}</b><span>Overtime</span></div><div><b class="${q.miss?'bad':''}">${q.miss}</b><span>Missing</span></div></div></div>`}).join('');
@@ -154,14 +176,14 @@ function render(){
 
 function chart(){
  const base=ses.filter(s=>(F.dept=='all'||s.e.dept==F.dept)&&hit(s));
- const ds=dates,c={};ds.forEach(d=>c[d]={m:0,e:0,o:0,a:0});base.forEach(s=>{if(s.abs)c[s.d].a++;else c[s.d][s.k]++});
- const tot=d=>c[d].m+c[d].e+c[d].o+c[d].a,mx=Math.max(1,...ds.map(tot));
+ const ds=dates,c={};ds.forEach(d=>c[d]={m:0,e:0,n:0,o:0,a:0});base.forEach(s=>{if(s.abs)c[s.d].a++;else c[s.d][s.k]++});
+ const tot=d=>c[d].m+c[d].e+c[d].n+c[d].o+c[d].a,mx=Math.max(1,...ds.map(tot));
  const W=720,H=200,L=34,R=6,T=12,Bm=36,pw=W-L-R,ph=H-T-Bm,bw=pw/Math.max(ds.length,1);let g='';
  [0,.5,1].forEach(f=>{const y=T+ph-f*ph;g+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${L-6}" y="${y+3}" text-anchor="end">${Math.round(mx*f)}</text>`});
  ds.forEach((d,i)=>{const x=L+i*bw;let y=T+ph;
-  for(const k of['m','e','o','a']){const h=c[d][k]/mx*ph;if(h<=0)continue;y-=h;g+=`<rect data-b style="--i:${i}" x="${x+1.5}" y="${y}" width="${Math.max(1,bw-3)}" height="${h}" fill="var(--${k=='a'?'bad':k})"${k=='a'?' opacity=".55"':''}/>`}
+  for(const k of['m','e','n','o','a']){const h=(c[d][k]||0)/mx*ph;if(h<=0)continue;y-=h;g+=`<rect data-b style="--i:${i}" x="${x+1.5}" y="${y}" width="${Math.max(1,bw-3)}" height="${h}" fill="var(--${k=='a'?'bad':k})"${k=='a'?' opacity=".55"':''}/>`}
   const sel=F.from!=null&&d>=F.from&&d<=F.to;
-  g+=`<rect data-d="${d}" x="${x}" y="${T}" width="${bw}" height="${ph+Bm-4}" fill="transparent"${sel?' stroke="var(--ink)" stroke-width="1.5" rx="3"':''} style="cursor:pointer"><title>${dl(d)}: ${c[d].m+c[d].e+c[d].o} present, ${c[d].a} absent</title></rect>`;
+  g+=`<rect data-d="${d}" x="${x}" y="${T}" width="${bw}" height="${ph+Bm-4}" fill="transparent"${sel?' stroke="var(--ink)" stroke-width="1.5" rx="3"':''} style="cursor:pointer"><title>${dl(d)}: ${c[d].m+c[d].e+(c[d].n||0)+c[d].o} present, ${c[d].a} absent</title></rect>`;
   const step=ds.length>20?2:1;
   if(i%step==0)g+=`<text x="${x+bw/2}" y="${H-18}" text-anchor="middle">${dd(d).getUTCDate()}</text><text x="${x+bw/2}" y="${H-6}" text-anchor="middle" style="font-size:8.5px">${dd(d).toLocaleDateString('en-GB',{weekday:'narrow',timeZone:'UTC'})}</text>`});
  $('#chart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily headcount">${g}</svg>`}
@@ -193,7 +215,7 @@ function strip(r){
 
 const bulkRows=()=>ROWS.filter(r=>F.shift=='all'||r.k==F.shift);
 const asgSel=r=>{const v=ASG[String(r.e.id)]||'';
- return CANASG?`<label class="sub2" style="display:flex;gap:6px;align-items:center">Shift <select data-asg="${esc(r.e.id)}"><option value=""${v==''?' selected':''}>Auto-detect</option><option value="m"${v=='m'?' selected':''}>Morning (fixed)</option><option value="e"${v=='e'?' selected':''}>Evening (fixed)</option></select></label>`:(v?`<span class="sub2">Shift fixed: ${NM[v]}</span>`:'')};
+ return CANASG?`<label class="sub2" style="display:flex;gap:6px;align-items:center">Shift <select data-asg="${esc(r.e.id)}"><option value=""${v==''?' selected':''}>Auto-detect</option><option value="m"${v=='m'?' selected':''}>Morning (fixed)</option><option value="e"${v=='e'?' selected':''}>Evening (fixed)</option>${P.n.on?`<option value="n"${v=='n'?' selected':''}>Night (fixed)</option>`:''}</select></label>`:(v?`<span class="sub2">Shift fixed: ${NM[v]}</span>`:'')};
 const hue=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%360;return h};
 const stc=q=>q.abs>q.n*.25&&q.abs>0?['ab','Mostly absent']:q.late>0||q.abs>0?['lt',q.late?'Late '+q.late+'x':'Absent '+q.abs+'x']:['ok','On time'];
 let lsig='';
@@ -203,8 +225,7 @@ function list(){
  $('#sorts').innerHTML='<span class="sub2">Sort by</span>'+SORTS.map(([k,t])=>`<button data-o="${k}" aria-pressed="${F.sort==k}">${t}</button>`).join('');
  let h=ROWS.slice(0,F.n).map((r,ix)=>{const q=r.q,op=false,rt=rateOf(q);let d='';
   if(op)d='<div class="dl"><div class="act"><button class="btn pri" data-x="pdf" data-id="'+esc(r.e.id)+'">Download PDF report</button><button class="btn" data-x="xls" data-id="'+esc(r.e.id)+'">Download Excel</button>'+asgSel(r)+'</div>'+strip(r)+
-   r.l.slice().sort((a,b)=>b.a-a.a).map(s=>s.abs?`<div class="ln"><span>${dl(s.d)} <span class="pill ${s.k}">${NM[s.k]}</span></span><span class="bad">Absent | no punch</span></div>`:
-    `<div class="ln"><span>${dl(s.d)} <span class="pill ${s.k}">${NM[s.k]}</span></span><span>${inS(s)} to ${outS(s)}${s.b&&!s.noin?' | '+hs(s.h*60):''}</span><span>${s.late?`<span class="pill bad">Late ${mn(s.late)}</span> `:''}${s.early?`<span class="pill bad">Left ${mn(s.early)} early</span> `:''}${s.ot?`<span class="pill good">OT ${mn(s.ot)}</span>`:''}</span></div>`).join('')+'</div>';
+   lines(r.l,false)+'</div>';
   const mc=(v,l,c)=>`<div class="mc"><b class="${c||''}">${v}</b><small>${l}</small></div>`;
   return `<div class="emp" style="--i:${Math.min(ix,12)}"><button data-e="${esc(r.e.id)}" aria-expanded="${op}"><div class="er"><div class="nmw"><span class="av" style="--h:${hue(r.e.name)}">${esc((String(r.e.name).trim()[0]||'?').toUpperCase())}</span><div class="nm">${esc(r.e.name)}<span class="stb ${stc(q)[0]}">${stc(q)[1]}</span><span class="pill ${r.k}">${NM[r.k]}${ASG[String(r.e.id)]?' (fixed)':''}</span><small>#${esc(r.e.id)} | ${esc(r.e.dept)} | ${rtxt(q)} attendance</small><div class="rate"><i style="width:${rt==null?0:rt}%;background:${rt==null||rt>=95?'var(--good)':rt>=85?'var(--warn)':'var(--bad)'}"></i></div></div></div>
   ${mc(q.n,'present')}${mc(q.abs,'absent',q.abs?'bad':'')}${mc(q.late,'late',q.late?'bad':'')}${mc(q.miss,'missing',q.miss?'bad':'')}${mc(q.avg?q.avg.toFixed(1):'-','avg hours')}${mc(hs(q.ot),'overtime')}</div></button>${d}</div>`}).join('');
@@ -249,13 +270,13 @@ $('#dfrom').onchange=rd;$('#dto').onchange=rd;
 $('#q').oninput=e=>{F.q=e.target.value.trim().toLowerCase();F.n=40;render()};
 
 /* shift settings (this page only; remembered for customers) */
-function setIn(){const v=(id,m)=>$(id).value=fm(m);v('#ms',P.m.s);v('#me',P.m.e);v('#es',P.e.s);v('#ee',P.e.e);$('#gr').value=P.grace;$('#ot').value=P.ot;$('#tl').value=P.tol;$('#wo').value=P.off}
+function setIn(){const v=(id,m)=>$(id).value=fm(m);v('#ms',P.m.s);v('#me',P.m.e);v('#es',P.e.s);v('#ee',P.e.e);v('#ns',P.n.s);v('#ne',P.n.e);$('#non').checked=P.n.on;$('#gr').value=P.grace;$('#ot').value=P.ot;$('#tl').value=P.tol;$('#wo').value=P.off}
 function readIn(){const g=(id,d)=>hm($(id).value)??d,en=(s,e)=>e<=s?e+1440:e;
- P.m.s=g('#ms',540);P.m.e=en(P.m.s,g('#me',1080));P.e.s=g('#es',900);P.e.e=en(P.e.s,g('#ee',120));
+ P.m.s=g('#ms',540);P.m.e=en(P.m.s,g('#me',1080));P.e.s=g('#es',900);P.e.e=en(P.e.s,g('#ee',120));P.n.s=g('#ns',1200);P.n.e=en(P.n.s,g('#ne',480));P.n.on=$('#non').checked;
  P.grace=+$('#gr').value||0;P.ot=+$('#ot').value||0;P.tol=+$('#tl').value||120;P.off=+$('#wo').value;
- if(USER.role==='customer'){try{localStorage.setItem(LSK,JSON.stringify({m:{s:P.m.s,e:P.m.e},e:{s:P.e.s,e:P.e.e},grace:P.grace,ot:P.ot,tol:P.tol,off:P.off}))}catch(x){}}
+ if(USER.role==='customer'){try{localStorage.setItem(LSK,JSON.stringify({m:{s:P.m.s,e:P.m.e},e:{s:P.e.s,e:P.e.e},n:{s:P.n.s,e:P.n.e,on:P.n.on?1:0},grace:P.grace,ot:P.ot,tol:P.tol,off:P.off}))}catch(x){}}
  build();ruler();render()}
-['#ms','#me','#es','#ee','#gr','#ot','#tl','#wo'].forEach(i=>$(i).onchange=readIn);
+['#ms','#me','#es','#ee','#ns','#ne','#non','#gr','#ot','#tl','#wo'].forEach(i=>$(i).onchange=readIn);
 $('#rst').onclick=()=>{applyCfg(CFG);if(USER.role==='customer'){try{localStorage.removeItem(LSK)}catch(x){}}setIn();build();ruler();render()};
 
 document.documentElement.dataset.theme='dark';
@@ -292,7 +313,7 @@ async function loadFile(f){
   botDone(s,`Read ${nf(rows.length)} punch records for ${nf(emps)} employees`);botPct(26);
   s=botStep('Matching in and out punches, even across midnight');await sleep(650);
   const pr=ses.filter(x=>!x.abs);botDone(s,`Matched ${nf(pr.length)} shifts`);botPct(48);
-  s=botStep('Detecting Morning and Evening shifts');await sleep(650);
+  s=botStep(P.n.on?'Detecting Morning, Evening and Night shifts':'Detecting Morning and Evening shifts');await sleep(650);
   const c={m:0,e:0,o:0};pr.forEach(x=>c[x.k]++);
   botDone(s,`${nf(c.m)} morning, ${nf(c.e)} evening, ${nf(c.o)} other`);botPct(70);
   s=botStep('Checking late arrivals and absences');await sleep(650);
@@ -492,8 +513,7 @@ function drawer(){
   const s=m.get(d),c=!s?'x':s.abs?'a':(s.late||s.noin||(!s.b&&!s.open))?'l':'p';
   cal+=`<span class="c ${c}" style="--i:${i++}" title="${dl(d)}: ${s?statusText(s):'No record'}">${dd(d).getUTCDate()}</span>`});
  const mc=(v,l,c)=>`<div><b class="${c||''}">${v}</b><small>${l}</small></div>`;
- const ln=r.l.slice().sort((a,b)=>b.a-a.a).map(s=>s.abs?`<div class="ln"><span>${dl(s.d)} <span class="pill ${s.k}">${NM[s.k]}</span></span><span class="bad">Absent | no punch</span></div>`:
-  `<div class="ln"><span>${dl(s.d)} <span class="pill ${s.k}">${NM[s.k]}</span></span><span>${inS(s)} to ${outS(s)}${s.b&&!s.noin?' | '+hs(s.h*60):''}</span><span>${s.late?`<span class="pill bad">Late ${mn(s.late)}</span> `:''}${s.early?`<span class="pill bad">Left ${mn(s.early)} early</span> `:''}${s.ot?`<span class="pill good">+${mn(s.ot)} overtime</span>`:''}</span></div>`).join('');
+ const ln=lines(r.l,true);
  $('#dbody').innerHTML=`<div class="dh"><span class="av" style="--h:${hue(r.e.name)}">${esc((String(r.e.name).trim()[0]||'?').toUpperCase())}</span><div><h3>${esc(r.e.name)}</h3><small>ID ${esc(r.e.id)}${r.e.dept?' | '+esc(r.e.dept):''}</small><div style="margin-top:5px"><span class="stb ${stc(q)[0]}" style="margin:0">${stc(q)[1]}</span></div></div><button type="button" class="dx" aria-label="Close">&times;</button></div>
  <div class="sec"><div class="dsc"><div class="big"><svg viewBox="0 0 84 84"><circle class="t" cx="42" cy="42" r="35"/><circle class="v" style="--C:${C};--o:${off}" cx="42" cy="42" r="35" stroke="${rc}"/></svg><b>${rtxt(q)}</b></div>
  <div class="g3">${mc(q.n,'present')}${mc(q.abs,'absent',q.abs?'bad':'')}${mc(q.late,'late',q.late?'bad':'')}${mc(q.miss,'missing',q.miss?'bad':'')}${mc(q.avg?q.avg.toFixed(1):'-','avg hours')}${mc(hs(q.ot),'overtime')}</div></div></div>
@@ -507,7 +527,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'){if(DR!=null)closeEmp();else 
 /* ---------- on site now + shift countdown ---------- */
 function nowCard(){const el=$('#now');if(!ses.length){el.hidden=true;return}
  const L=dates[dates.length-1],open=ses.filter(s=>s.d==L&&s.open&&(F.dept=='all'||s.e.dept==F.dept)),nw=new Date(),mm=nw.getHours()*60+nw.getMinutes();
- const st=[['m',P.m.s],['e',P.e.s%1440]].map(([k,s])=>[k,(s-mm+1440)%1440]).sort((a,b)=>a[1]-b[1])[0];
+ const st=SHS().map(k=>[k,P[k].s%1440]).map(([k,s])=>[k,(s-mm+1440)%1440]).sort((a,b)=>a[1]-b[1])[0];
  const av=open.slice(0,7).map(s=>`<span class="av" style="--h:${hue(s.e.name)}" title="${esc(s.e.name)}">${esc((String(s.e.name).trim()[0]||'?').toUpperCase())}</span>`).join('')+(open.length>7?`<span class="mo">+${open.length-7}</span>`:'');
  el.innerHTML=`<div class="nt"><i>&#9201;</i><div><b>${NM[st[0]]} shift starts in ${mn(st[1]||1440)}</b><small>Based on your shift timings and the current time</small></div></div>`+
   (open.length?`<div class="nt"><div><span class="live">On site at the last punch</span><small>${open.length} ${open.length==1?'person has':'people have'} not punched out yet (${dlong(L)})</small></div></div><div class="av2">${av}</div>`:'');

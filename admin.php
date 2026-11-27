@@ -125,6 +125,8 @@ button:hover:not(:disabled){border-color:rgba(91,140,255,.6)}
 <div class="card"><h2>Shift timings</h2><p class="s">Applies to everyone using the saved data. Customers can also adjust timings for their own file on the dashboard.</p><div class="g">
 <label>Morning starts<input type="time" id="ms"></label><label>Morning ends<input type="time" id="me"></label>
 <label>Evening starts<input type="time" id="es"></label><label>Evening ends (next day)<input type="time" id="ee"></label>
+<label class="c" style="grid-column:1/-1"><input type="checkbox" id="non"> Use a Night shift (for staff who arrive in the evening, such as 8 PM, and leave the next morning)</label>
+<label>Night starts<input type="time" id="ns"></label><label>Night ends (next day)<input type="time" id="ne"></label>
 <label>Grace for late / early (min)<input type="number" id="gr" min="0"></label><label>Overtime after (min)<input type="number" id="ot" min="0"></label>
 <label>Match punch within (min)<input type="number" id="tl" min="30"></label>
 <label>Weekly off day<select id="wo"><option value="-1">None</option><option value="0">Sunday</option><option value="5">Friday</option><option value="6">Saturday</option></select></label></div>
@@ -164,7 +166,7 @@ const fm=m=>{m=((m%1440)+1440)%1440;return String(m/60|0).padStart(2,'0')+':'+St
 const hm=t=>{const x=String(t).match(/(\d{1,2}):(\d{2})/);return x?+x[1]*60+ +x[2]:null};
 const say=(id,ok,t)=>{const e=typeof id=='string'?$(id):id;e.textContent=t;e.style.color=ok?'var(--good)':'var(--bad)'};
 async function api(a,b){try{const r=await fetch('api.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({a,csrf:CSRF,...b})});return await r.json()}catch(e){return{ok:0,msg:'Server error. Please try again.'}}}
-$('#ms').value=fm(S.m.s);$('#me').value=fm(S.m.e);$('#es').value=fm(S.e.s);$('#ee').value=fm(S.e.e);
+$('#ms').value=fm(S.m.s);$('#me').value=fm(S.m.e);$('#es').value=fm(S.e.s);$('#ee').value=fm(S.e.e);const SN=S.n||{s:1200,e:1920,on:0};$('#ns').value=fm(SN.s);$('#ne').value=fm(SN.e);$('#non').checked=!!+SN.on;
 $('#gr').value=S.grace;$('#ot').value=S.ot;$('#tl').value=S.tol;$('#wo').value=S.off;
 
 /* branding */
@@ -193,7 +195,7 @@ $('#sv').onclick=async()=>{$('#sv').disabled=true;const r=await api('data',{rows
 /* shifts */
 $('#ss').onclick=async()=>{const g=(i,d)=>hm($(i).value)??d,en=(s,e)=>e<=s?e+1440:e;
  const ms=g('#ms',540),es=g('#es',900);
- const r=await api('settings',{s:{m:{s:ms,e:en(ms,g('#me',1080))},e:{s:es,e:en(es,g('#ee',120))},grace:+$('#gr').value,ot:+$('#ot').value,tol:+$('#tl').value,off:+$('#wo').value}});say('#m2',r.ok,r.msg)};
+ const r=await api('settings',{s:{m:{s:ms,e:en(ms,g('#me',1080))},e:{s:es,e:en(es,g('#ee',120))},n:{s:g('#ns',1200),e:en(g('#ns',1200),g('#ne',480)),on:$('#non').checked?1:0},grace:+$('#gr').value,ot:+$('#ot').value,tol:+$('#tl').value,off:+$('#wo').value}});say('#m2',r.ok,r.msg)};
 
 /* users */
 const sync=(role,d,u)=>{d.disabled=role!=='viewer';if(role!=='viewer')d.value='';u.disabled=role!=='viewer'||d.value!=='';if(u.disabled)u.checked=false};

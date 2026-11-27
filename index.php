@@ -367,6 +367,33 @@ main{max-width:1180px}
 .cmd li.on,.cmd li:hover{background:rgba(91,140,255,.22)}.cmd li.none{color:#8f9bb8;cursor:default}
 .cmd .ch{padding:8px 16px;font-size:11px;color:#8f9bb8;border-top:1px solid rgba(255,255,255,.08)}
 @media(prefers-reduced-motion:reduce){.xr{transition:none}}
+
+/* v17: night shift colour, day timeline bar, weekly groups */
+:root{--n:#C084FC;--nt:#C084FC}
+.sc.n{border-top-color:var(--n)}
+.pill.n{border-color:var(--n);color:var(--nt)}
+.pill.warn{border-color:var(--warn);color:var(--warn)}
+.nchk{display:flex;align-items:center;gap:8px;align-self:end;padding-bottom:10px}
+.tbw{flex:0 0 100%;order:9;padding-top:2px}
+.tb{position:relative;height:8px;border-radius:6px;background:rgba(255,255,255,.07);overflow:hidden}
+.tb u{position:absolute;top:0;bottom:0;background:rgba(255,255,255,.13);border-radius:6px}
+.tb b{position:absolute;top:1px;bottom:1px;border-radius:5px;background:var(--o)}
+.tb b.wm{background:var(--m)}.tb b.we{background:var(--e)}.tb b.wn{background:var(--n)}
+.tb b.wx{background:repeating-linear-gradient(90deg,var(--bad) 0 3px,transparent 3px 6px)}
+.wk{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:14px 0 2px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.05);font-size:12px;color:#9fb0cc}
+.wk b{color:#e8effc;font-weight:600}.wk i{font-style:normal}
+
+/* v17: lighter analysis card (replaces the full-screen bot overlay) */
+#bot{background:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;place-items:start center;padding-top:76px;pointer-events:none}
+#bot .botc{pointer-events:auto;width:min(440px,100%);padding:16px 18px;border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+#bot .bt{display:none}
+#bot .botc h3{margin:0 0 8px;font-size:16px;display:flex;gap:10px;align-items:center}
+#bot .botc h3:before{content:"";flex:none;width:16px;height:16px;border-radius:50%;border:2px solid rgba(124,244,255,.85);border-right-color:transparent;animation:bspin .8s linear infinite}
+#bot.happy h3:before{animation:none;border-color:#3DDC97;background:#3DDC97}
+#bot.bad h3:before{animation:none;border-color:#FF8A80;background:#FF8A80}
+@keyframes bspin{to{transform:rotate(360deg)}}
+.steps{min-height:0}
+@media(prefers-reduced-motion:reduce){#bot .botc h3:before{animation:none}}
 </style>
 </head>
 <body>
@@ -430,7 +457,7 @@ main{max-width:1180px}
   <details class="setbar noprint"><summary>Shift settings<?= $role === 'customer' ? ' (saved in this browser)' : ' (this page only)' ?></summary>
    <div class="in"><div class="grid2" style="margin-top:4px">
     <label>Morning starts<input type="time" id="ms"></label><label>Morning ends<input type="time" id="me"></label>
-    <label>Evening starts<input type="time" id="es"></label><label>Evening ends (next day)<input type="time" id="ee"></label>
+    <label>Evening starts<input type="time" id="es"></label><label>Evening ends (next day)<input type="time" id="ee"></label><label class="nchk"><input type="checkbox" id="non"> Night shift</label><label>Night starts<input type="time" id="ns"></label><label>Night ends (next day)<input type="time" id="ne"></label>
     <label>Grace for late / early (min)<input type="number" id="gr" min="0"></label>
     <label>Overtime after (min)<input type="number" id="ot" min="0"></label>
     <label>Match punch within (min)<input type="number" id="tl" min="30"></label>

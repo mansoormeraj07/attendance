@@ -74,7 +74,7 @@ function need($r = null) {
 function csrf() { return $_SESSION['csrf'] ?? ($_SESSION['csrf'] = bin2hex(random_bytes(16))); }
 function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES); }
 function jx($v) { return json_encode($v, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); }
-function settings() { return rj('settings.json', ['m'=>['s'=>540,'e'=>1080],'e'=>['s'=>900,'e'=>1560],'grace'=>10,'ot'=>30,'tol'=>120,'off'=>0]); }
+function settings() { return rj('settings.json', ['m'=>['s'=>540,'e'=>1080],'e'=>['s'=>900,'e'=>1560],'n'=>['s'=>1200,'e'=>1920,'on'=>0],'grace'=>10,'ot'=>30,'tol'=>120,'off'=>0]); }
 function brand() {
   $b = (array)rj('brand.json', []) + ['name'=>'Attendance Portal','tagline'=>'Shift attendance, simplified','accent'=>'#1F4FD8','contact'=>''];
   if (!preg_match('/^#[0-9a-fA-F]{6}$/', (string)$b['accent'])) $b['accent'] = '#1F4FD8';

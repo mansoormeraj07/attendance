@@ -42,6 +42,7 @@ if ($a === 'settings') {
   $t = fn($v, $lo, $hi) => max($lo, min($hi, (int)$v));
   $v = ['m' => ['s' => $t($s['m']['s'] ?? 540, 0, 1439), 'e' => $t($s['m']['e'] ?? 1080, 1, 2879)],
         'e' => ['s' => $t($s['e']['s'] ?? 900, 0, 1439), 'e' => $t($s['e']['e'] ?? 1560, 1, 2879)],
+        'n' => ['s' => $t($s['n']['s'] ?? 1200, 0, 1439), 'e' => $t($s['n']['e'] ?? 1920, 1, 2879), 'on' => empty($s['n']['on']) ? 0 : 1],
         'grace' => $t($s['grace'] ?? 10, 0, 240), 'ot' => $t($s['ot'] ?? 30, 0, 600), 'tol' => $t($s['tol'] ?? 120, 30, 600), 'off' => $t($s['off'] ?? 0, -1, 6)];
   out(wj('settings.json', $v) ? 1 : 0, 'Shift settings saved.');
 }
@@ -52,7 +53,7 @@ if ($a === 'assign') {
   foreach ((array)($in['set'] ?? []) as $id => $v) {
     if (++$n > 3000) break;
     $id = cut($id, 30);
-    if ($v === 'm' || $v === 'e') $map[$id] = $v; else unset($map[$id]);
+    if ($v === 'm' || $v === 'e' || $v === 'n') $map[$id] = $v; else unset($map[$id]);
   }
   out(wj('assign.json', (object)$map) ? 1 : 0, 'Shift saved.');
 }
